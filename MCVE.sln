@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp1", "ConsoleApp1.csproj", "{DC2C6C8D-2D3A-4E78-A81C-93CC0A0EC37B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCVE", "MCVE\MCVE.csproj", "{2BEA8AFC-E563-4930-9C23-5945F7ED4514}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +8,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{DC2C6C8D-2D3A-4E78-A81C-93CC0A0EC37B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DC2C6C8D-2D3A-4E78-A81C-93CC0A0EC37B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DC2C6C8D-2D3A-4E78-A81C-93CC0A0EC37B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DC2C6C8D-2D3A-4E78-A81C-93CC0A0EC37B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BEA8AFC-E563-4930-9C23-5945F7ED4514}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BEA8AFC-E563-4930-9C23-5945F7ED4514}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BEA8AFC-E563-4930-9C23-5945F7ED4514}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BEA8AFC-E563-4930-9C23-5945F7ED4514}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
