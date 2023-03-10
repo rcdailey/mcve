@@ -107,7 +107,9 @@ public class YamlConfigContractResolver : DefaultContractResolver
 {
     public static readonly YamlConfigContractResolver Instance = new();
 
-    
+    public YamlConfigContractResolver()
+    {
+    }
 
     protected override JsonProperty CreateProperty(
         MemberInfo member,
