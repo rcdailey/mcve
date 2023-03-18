@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -9,6 +10,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using YamlDotNet.Serialization.Utilities;
 
 namespace MCVE;
 
@@ -20,8 +22,8 @@ public record QualityScoreConfigYaml
 
 public record CustomFormatConfigYaml
 {
-    public Collection<string> TrashIds { get; init; } = new();
-    public Collection<QualityScoreConfigYaml> QualityProfiles { get; init; } = new();
+    public Collection<string>? TrashIds { get; init; }
+    public Collection<QualityScoreConfigYaml>? QualityProfiles { get; init; }
 }
 
 public record QualitySizeConfigYaml
@@ -44,20 +46,20 @@ public record ServiceConfigYaml
     public bool ReplaceExistingCustomFormats { get; init; }
     public Collection<CustomFormatConfigYaml>? CustomFormats { get; init; }
     public QualitySizeConfigYaml? QualityDefinition { get; init; }
-    public Collection<QualityProfileConfigYaml> QualityProfiles { get; init; } = new();
+    public Collection<QualityProfileConfigYaml>? QualityProfiles { get; init; }
 }
 
 public record ReleaseProfileFilterConfigYaml
 {
-    public Collection<string> Include { get; init; } = new();
-    public Collection<string> Exclude { get; init; } = new();
+    public Collection<string>? Include { get; init; }
+    public Collection<string>? Exclude { get; init; }
 }
 
 public record ReleaseProfileConfigYaml
 {
-    public Collection<string> TrashIds { get; init; } = new();
+    public Collection<string>? TrashIds { get; init; }
     public bool StrictNegativeScores { get; init; }
-    public Collection<string> Tags { get; init; } = new();
+    public Collection<string>? Tags { get; init; }
     public ReleaseProfileFilterConfigYaml? Filter { get; init; }
 }
 
@@ -65,13 +67,16 @@ public record RadarrConfigYaml : ServiceConfigYaml;
 
 public record SonarrConfigYaml : ServiceConfigYaml
 {
-    public Collection<ReleaseProfileConfigYaml> ReleaseProfiles { get; init; } = new();
+    public Collection<ReleaseProfileConfigYaml>? ReleaseProfiles { get; init; }
 }
 
 public record RootConfigYaml
 {
-    public Dictionary<string, RadarrConfigYaml> Radarr { get; init; } = new();
-    public Dictionary<string, SonarrConfigYaml> Sonarr { get; init; } = new();
+    [TypeConverter(typeof(ArrayToMapYamlConverter<RadarrConfigYaml>))]
+    public Dictionary<string, RadarrConfigYaml>? Radarr { get; init; }
+
+    [TypeConverter(typeof(ArrayToMapYamlConverter<SonarrConfigYaml>))]
+    public Dictionary<string, SonarrConfigYaml>? Sonarr { get; init; }
 }
 
 internal class StringToNumberConverter : IYamlTypeConverter
@@ -103,42 +108,127 @@ internal class StringToNumberConverter : IYamlTypeConverter
     }
 }
 
-public class YamlConfigContractResolver : DefaultContractResolver
+// public class YamlConfigContractResolver : DefaultContractResolver
+// {
+//     public static readonly YamlConfigContractResolver Instance = new();
+//
+//     public YamlConfigContractResolver()
+//     {
+//         NamingStrategy = new SnakeCaseNamingStrategy();
+//     }
+//
+//     protected override JsonProperty CreateProperty(
+//         MemberInfo member,
+//         MemberSerialization memberSerialization)
+//     {
+//         var property = base.CreateProperty(member, memberSerialization);
+//         if (property.PropertyType == typeof(string))
+//         {
+//             return property;
+//         }
+//
+//         if (property.PropertyType?.GetInterface(nameof(IEnumerable)) != null)
+//         {
+//             property.ShouldSerialize = instance => ShouldSerialize(property, instance);
+//         }
+//
+//         return property;
+//     }
+//
+//     private static bool ShouldSerialize(JsonProperty property, object instance)
+//     {
+//         if (property.PropertyName is null)
+//         {
+//             return false;
+//         }
+//
+//         var instanceProperty = instance.GetType().GetProperty(property.PropertyName);
+//         var enumerable = instanceProperty?.GetValue(instance) as IEnumerable<object>;
+//         return enumerable?.Count() > 0;
+//     }
+// }
+
+class ArrayToMapNodeDeserializer : INodeDeserializer
 {
-    public static readonly YamlConfigContractResolver Instance = new();
+    public bool Deserialize(IParser reader, Type expectedType, Func<IParser, Type, object?> nestedObjectDeserializer,
+        out object? value)
+    {
+        throw new NotImplementedException();
+    }
+}
 
-    public YamlConfigContractResolver()
+class ArrayToMapYamlConverter<TConfigYaml> : IYamlTypeConverter
+    where TConfigYaml : ServiceConfigYaml
+{
+    public ArrayToMapYamlConverter()
     {
     }
 
-    protected override JsonProperty CreateProperty(
-        MemberInfo member,
-        MemberSerialization memberSerialization)
+    public bool Accepts(Type type)
     {
-        var property = base.CreateProperty(member, memberSerialization);
-        if (property.PropertyType == typeof(string))
-        {
-            return property;
-        }
-
-        if (property.PropertyType?.GetInterface(nameof(IEnumerable)) != null)
-        {
-            property.ShouldSerialize = instance => ShouldSerialize(property, instance);
-        }
-
-        return property;
+        return typeof(IDictionary<string, TConfigYaml>).IsAssignableFrom(type);
     }
 
-    private static bool ShouldSerialize(JsonProperty property, object instance)
+    public object? ReadYaml(IParser parser, Type type)
     {
-        if (property.PropertyName is null)
+        var dict = new Dictionary<string, object>();
+        switch (parser.Current)
         {
-            return false;
+            case MappingStart:
+                ParseAndAdd<MappingStart, MappingEnd>(parser, dict);
+                break;
+
+            case SequenceStart:
+                ParseAndAdd<SequenceStart, SequenceEnd>(parser, dict);
+                break;
+
+            default:
+                return null;
         }
 
-        var instanceProperty = instance.GetType().GetProperty(property.PropertyName);
-        var enumerable = instanceProperty?.GetValue(instance) as IEnumerable<object>;
-        return enumerable?.Count() > 0;
+        return null; // temporary
+    }
+
+    private void ParseAndAdd<TStart, TEnd>(IParser parser, IDictionary<string, object> dict)
+        where TStart : ParsingEvent
+        where TEnd : ParsingEvent
+    {
+        parser.Consume<TStart>();
+        while (!parser.TryConsume<TEnd>(out _))
+        {
+            ParseAndAddConfig(parser, dict);
+        }
+    }
+
+    private static int _instanceCount = 1;
+
+    private void ParseAndAddConfig(IParser parser, IDictionary<string, object> dict)
+    {
+        var instanceName = parser.TryConsume<Scalar>(out var key)
+            ? key.Value
+            : $"instance{_instanceCount++}";
+
+        // var newConfig = (ServiceConfiguration?)_deserializer.Deserialize(parser, configType);
+        // if (newConfig is null)
+        // {
+        //     throw new YamlException(
+        //         $"Unable to deserialize instance at line {lineNumber} using configuration type {_currentSection}");
+        // }
+        //
+        // newConfig.InstanceName = instanceName;
+        // newConfig.LineNumber = lineNumber ?? 0;
+        //
+        // if (!_validator.Validate(newConfig))
+        // {
+        //     throw new YamlException("Validation failed");
+        // }
+        //
+        // _configs.Add(newConfig);
+    }
+
+    public void WriteYaml(IEmitter emitter, object? value, Type type)
+    {
+        throw new NotImplementedException();
     }
 }
 
@@ -147,6 +237,10 @@ public static class Program
     public static async Task Main()
     {
         const string yaml = @"
+radarr:
+  - api_key: key0
+    base_url: asdf
+
 radarr:
   myinstance1:
     api_key: key1
@@ -178,6 +272,7 @@ sonarr:
         var jsonSerializer = new JsonSerializer
         {
             Formatting = Formatting.Indented,
+            NullValueHandling = NullValueHandling.Ignore,
             ContractResolver = new DefaultContractResolver()
             {
                 NamingStrategy = new SnakeCaseNamingStrategy()
