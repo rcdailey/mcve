@@ -150,10 +150,14 @@ internal class StringToNumberConverter : IYamlTypeConverter
 
 class ArrayToMapNodeDeserializer : INodeDeserializer
 {
-    public bool Deserialize(IParser reader, Type expectedType, Func<IParser, Type, object?> nestedObjectDeserializer,
+    public bool Deserialize(
+        IParser reader,
+        Type expectedType,
+        Func<IParser, Type, object?> nestedObjectDeserializer,
         out object? value)
     {
-        throw new NotImplementedException();
+        value = null;
+        return false;
     }
 }
 
@@ -162,6 +166,7 @@ class ArrayToMapYamlConverter<TConfigYaml> : IYamlTypeConverter
 {
     public ArrayToMapYamlConverter()
     {
+        
     }
 
     public bool Accepts(Type type)
