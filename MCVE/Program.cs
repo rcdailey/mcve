@@ -72,10 +72,7 @@ public record SonarrConfigYaml : ServiceConfigYaml
 
 public record RootConfigYaml
 {
-    [TypeConverter(typeof(ArrayToMapYamlConverter<RadarrConfigYaml>))]
     public Dictionary<string, RadarrConfigYaml>? Radarr { get; init; }
-
-    [TypeConverter(typeof(ArrayToMapYamlConverter<SonarrConfigYaml>))]
     public Dictionary<string, SonarrConfigYaml>? Sonarr { get; init; }
 }
 
@@ -161,8 +158,7 @@ class ArrayToMapNodeDeserializer : INodeDeserializer
     }
 }
 
-class ArrayToMapYamlConverter<TConfigYaml> : IYamlTypeConverter
-    where TConfigYaml : ServiceConfigYaml
+class ArrayToMapYamlConverter : IYamlTypeConverter
 {
     public ArrayToMapYamlConverter()
     {
@@ -171,7 +167,7 @@ class ArrayToMapYamlConverter<TConfigYaml> : IYamlTypeConverter
 
     public bool Accepts(Type type)
     {
-        return typeof(IDictionary<string, TConfigYaml>).IsAssignableFrom(type);
+        return typeof(IDictionary<,>).IsAssignableFrom(type);
     }
 
     public object? ReadYaml(IParser parser, Type type)
@@ -242,7 +238,7 @@ public static class Program
     public static async Task Main()
     {
         const string yaml = @"
-radarr:
+radarr2:
   - api_key: key0
     base_url: asdf
 
@@ -266,11 +262,17 @@ sonarr:
 
         var deserializer = new DeserializerBuilder()
             // .WithTypeConverter(new StringToNumberConverter())
+            // .WithTypeConverter(new ArrayToMapYamlConverter())
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
             .Build();
 
         using TextReader reader = new StringReader(yaml);
-        var categories = deserializer.Deserialize<RootConfigYaml>(reader);
+        // var theYaml = deserializer.Deserialize<RootConfigYaml>(reader);
+        var theYaml = deserializer.Deserialize(reader);
+        if (theYaml is null)
+        {
+            return;
+        }
 
         // var serializedObject = JsonConvert.SerializeObject(categories, Formatting.Indented);
 
@@ -284,22 +286,22 @@ sonarr:
             }
         };
 
-        var json = JToken.FromObject(categories, jsonSerializer);
+        var json = JToken.FromObject(theYaml, jsonSerializer);
+        var theObject = json.ToObject<RootConfigYaml>();
 
         // var schemaUrl =
         //     "https://raw.githubusercontent.com/recyclarr/recyclarr/master/schemas/config-schema.json";
         // var schemaData = await schemaUrl.GetStringAsync();
-        var jsonData = new JsonTextReader(File.OpenText("config-schema.json"));
+        // var jsonData = new JsonTextReader(File.OpenText("config-schema.json"));
 
-        var resolver = new JSchemaUrlResolver();
-        // var schema = JSchema.Parse(schemaData, resolver);
-        var schema = JSchema.Load(jsonData, resolver);
-
-        var isValid = json.IsValid(schema, out IList<ValidationError> errors);
-        Console.WriteLine($"Valid: {isValid}");
-        foreach (var err in errors)
-        {
-            Console.WriteLine($"Error ({err.Path}): {err.Message}");
-        }
+        // var resolver = new JSchemaUrlResolver();
+        // var schema = JSchema.Load(jsonData, resolver);
+        //
+        // var isValid = json.IsValid(schema, out IList<ValidationError> errors);
+        // Console.WriteLine($"Valid: {isValid}");
+        // foreach (var err in errors)
+        // {
+        //     Console.WriteLine($"Error ({err.Path}): {err.Message}");
+        // }
     }
 }
