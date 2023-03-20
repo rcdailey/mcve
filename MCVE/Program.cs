@@ -25,6 +25,8 @@ public static class Program
 
     private static RootConfigYaml DeserializeOldConfig(string yaml)
     {
+        using TextReader reader = new StringReader(yaml);
+        return Deserializer.Deserialize<RootConfigYaml>(reader);
     }
 
     public static async Task Main()
