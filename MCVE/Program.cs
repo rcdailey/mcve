@@ -8,7 +8,6 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace MCVE;
 
-
 public static class Program
 {
     private static readonly IDeserializer Deserializer = new DeserializerBuilder()
@@ -25,30 +24,39 @@ public static class Program
 
     private static RootConfigYaml DeserializeOldConfig(string yaml)
     {
-        using TextReader reader = new StringReader(yaml);
-        return Deserializer.Deserialize<RootConfigYaml>(reader);
+        try
+        {
+            using TextReader reader = new StringReader(yaml);
+            // todo: If successful, log a deprecation message
+            return Deserializer.Deserialize<RootConfigYaml>(reader);
+        }
+        catch (Exception e)
+        {
+            // todo: Log exception and rethrow
+            throw;
+        }
     }
 
     public static async Task Main()
     {
         const string yaml = @"
-radarr2:
+radarr:
   - api_key: key0
     base_url: asdf
 
-radarr:
-  myinstance1:
-    api_key: key1
-    base_url: url1
-  myinstance2:
-    api_key: key2
-    base_url: url2
-    custom_formats:
-      - trash_ids:
-          - abc123
-        quality_profiles:
-          - name: MyProfile
-            score: 1000
+#radarr:
+#  myinstance1:
+#    api_key: key1
+#    base_url: url1
+#  myinstance2:
+#    api_key: key2
+#    base_url: url2
+#    custom_formats:
+#      - trash_ids:
+#          - abc123
+#        quality_profiles:
+#          - name: MyProfile
+#            score: 1000
 sonarr: 
   myinstance3:
     base_url: url3
@@ -62,9 +70,16 @@ sonarr:
         }
         catch (YamlException e)
         {
-            // todo: Try to check property exception originated from and conditionally parse old config based on that?
             // todo: Log exception (maybe debug?)
-            theYaml = DeserializeOldConfig(yaml);
+            try
+            {
+                // todo: Try to check property exception originated from and conditionally parse old config based on that?
+                theYaml = DeserializeOldConfig(yaml);
+            }
+            catch
+            {
+                throw e;
+            }
         }
 
         // var serializedObject = JsonConvert.SerializeObject(categories, Formatting.Indented);
