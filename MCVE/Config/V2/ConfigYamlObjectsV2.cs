@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace MCVE.Config;
+namespace MCVE.Config.V2;
 
 public record QualityScoreConfigYaml
 {

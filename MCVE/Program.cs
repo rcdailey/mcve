@@ -1,4 +1,6 @@
-﻿using MCVE.Config;
+﻿using AutoMapper;
+using AutoMapper.EquivalencyExpression;
+using MCVE.Config.V2;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -16,6 +18,8 @@ public static class Program
         .WithNamingConvention(UnderscoredNamingConvention.Instance)
         .Build();
 
+    private static IMapper _mapper;
+
     public static RootConfigYaml DeserializeConfig(string yaml)
     {
         using TextReader reader = new StringReader(yaml);
@@ -28,7 +32,8 @@ public static class Program
         {
             using TextReader reader = new StringReader(yaml);
             // todo: If successful, log a deprecation message
-            return Deserializer.Deserialize<RootConfigYaml>(reader);
+            var obj = Deserializer.Deserialize<Config.V1.RootConfigYaml>(reader);
+            return _mapper.Map<RootConfigYaml>(obj);
         }
         catch (Exception e)
         {
@@ -57,10 +62,18 @@ radarr:
 #        quality_profiles:
 #          - name: MyProfile
 #            score: 1000
-sonarr: 
-  myinstance3:
-    base_url: url3
+#sonarr: 
+#  myinstance3:
+#    base_url: url3
 ";
+        var mapperConfig = new MapperConfiguration(o =>
+        {
+            o.AddCollectionMappers();
+            o.AddGlobalIgnore("Item");
+            o.AddProfile<ConfigMapperProfileV1ToV2>();
+        });
+        mapperConfig.AssertConfigurationIsValid();
+        _mapper = mapperConfig.CreateMapper();
 
         // Try to deserialize the latest object first
         RootConfigYaml? theYaml = null;
